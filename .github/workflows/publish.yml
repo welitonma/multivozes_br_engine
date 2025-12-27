@@ -69,12 +69,18 @@ jobs:
           provenance: false
 
       # 7. (Opcional) Atualizar descrição no Docker Hub
+      - name: Wait for Docker Hub
+        if: github.event_name != 'pull_request'
+        run: sleep 10
+
       - name: Update Docker Hub Description
         uses: peter-evans/dockerhub-description@v4
         if: github.event_name != 'pull_request'
+        continue-on-error: true  # Não falha o workflow se der erro
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-          repository: ${{ secrets.DOCKERHUB_USERNAME }}/multivozes
+          repository: ${{ secrets.DOCKERHUB_USERNAME }}/multivozes-br-engine
           short-description: "TTS API 100% compatível com OpenAI - Vozes gratuitas da Microsoft Edge 🇧🇷"
           readme-filepath: ./README.md
+
