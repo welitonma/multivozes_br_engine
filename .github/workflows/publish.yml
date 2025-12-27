@@ -1,0 +1,80 @@
+name: Docker Build and Push - Multivozes
+
+on:
+  push:
+    branches: [master]
+    tags:
+      - 'v*.*.*'  # Gatilho em tags como v1.0.0, v2.1.3, etc
+  pull_request:
+    branches: [master]
+  workflow_dispatch:  # Permite acionar manualmente
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    environment: DockerHUB
+
+    steps:
+      # 1. Checkout do código
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Extrai metadados para tags e labels automáticas
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/multivozes-br-engine
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.title=Multivozes BR Engine
+            org.opencontainers.image.description=TTS API compatível com OpenAI usando Microsoft Edge
+            org.opencontainers.image.vendor=welitonma
+            org.opencontainers.image.licenses=MIT
+
+      # 3. Configura QEMU para build multi-plataforma
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      # 4. Configura Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 5. Login no Docker Hub
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 6. Build e Push (multi-arquitetura: amd64 e arm64)
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+
+      # 7. (Opcional) Atualizar descrição no Docker Hub
+      - name: Update Docker Hub Description
+        uses: peter-evans/dockerhub-description@v4
+        if: github.event_name != 'pull_request'
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ${{ secrets.DOCKERHUB_USERNAME }}/multivozes
+          short-description: "TTS API 100% compatível com OpenAI - Vozes gratuitas da Microsoft Edge 🇧🇷"
+          readme-filepath: ./README.md
