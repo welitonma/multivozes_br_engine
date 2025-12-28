@@ -3,11 +3,11 @@ import os
 import traceback
 import tempfile
 import json # NOVO: Para carregar o ficheiro JSON
+import re
 from pathlib import Path
 from pydub import AudioSegment # NOVO: Para conversão de áudio
 from dotenv import load_dotenv
 
-from config import DEFAULT_CONFIGS
 from utils import LOG_ERROS_DETALHADO
 
 load_dotenv()
@@ -48,13 +48,82 @@ def velocidade_para_taxa(velocidade: float) -> str:
 
 async def gerar_audio(texto: str, voz: str, formato_resposta: str, velocidade: float) -> str:
     """
-    Gera o áudio usando edge-tts (sempre como mp3 inicialmente), e depois converte
-    para o formato final desejado, salvando num ficheiro temporário.
+    Gera o áudio usando edge-tts com suporte opcional a pausas customizadas [pause: Xs].
+    Se o texto contiver [pause: 2s] ou [pause: 500ms], gera áudio com pausas inseridas.
     """
     # Verifica se a voz solicitada é um apelido da OpenAI e a converte
     voz_edge_tts = MAPEAMENTO_VOZES.get(voz, voz)
     taxa = velocidade_para_taxa(velocidade)
 
+    # Detectar se há pausas customizadas no texto
+    if '[pause:' in texto.lower():
+        return await gerar_audio_com_pausas(texto, voz_edge_tts, taxa, formato_resposta)
+    else:
+        return await gerar_audio_normal(texto, voz_edge_tts, taxa, formato_resposta)
+
+async def gerar_audio_com_pausas(texto: str, voz: str, taxa: str, formato: str) -> str:
+    """
+    Gera áudio com pausas customizadas inseridas digitalmente.
+    Exemplo: "Olá [pause: 2s] Mundo [pause: 500ms] Fim"
+    """
+    # Parse do texto: divide em partes de texto e pausas
+    # Regex captura: [pause: 2s] ou [pause: 1000ms]
+    partes = re.split(r'\[pause:\s*(\d+(?:\.\d+)?)(s|ms)\]', texto, flags=re.IGNORECASE)
+    
+    audio_final = AudioSegment.empty()
+    
+    i = 0
+    while i < len(partes):
+        parte_texto = partes[i].strip()
+        
+        # Se tem texto, gerar áudio para essa parte
+        if parte_texto:
+            try:
+                temp_audio_path = await gerar_audio_normal(parte_texto, voz, taxa, 'mp3')
+                audio_segment = AudioSegment.from_mp3(temp_audio_path)
+                audio_final += audio_segment
+                Path(temp_audio_path).unlink()  # Deletar arquivo temporário
+            except Exception as e:
+                if LOG_ERROS_DETALHADO:
+                    print(f"Erro ao gerar segmento de áudio: {e}")
+        
+        # Se há informação de pausa (tempo + unidade), adicionar silêncio
+        if i + 2 < len(partes):
+            tempo = float(partes[i + 1])
+            unidade = partes[i + 2].lower()
+            
+            # Converter para milissegundos
+            pausa_ms = int(tempo if unidade == 'ms' else tempo * 1000)
+            pausa_ms = min(pausa_ms, 10000)  # Máximo 10 segundos por pausa
+            
+            # Adicionar silêncio digital (24kHz = sample rate do Edge TTS)
+            silencio = AudioSegment.silent(duration=pausa_ms, frame_rate=24000)
+            audio_final += silencio
+            
+            i += 2  # Pular os grupos capturados (tempo e unidade)
+        
+        i += 1
+    
+    # Salvar arquivo final no formato solicitado
+    ficheiro_final = tempfile.NamedTemporaryFile(delete=False, suffix=f'.{formato}')
+    caminho_final = ficheiro_final.name
+    ficheiro_final.close()
+    
+    try:
+        audio_final.export(caminho_final, format=formato.lower())
+    except Exception as e:
+        if Path(caminho_final).exists():
+            Path(caminho_final).unlink(missing_ok=True)
+        if LOG_ERROS_DETALHADO:
+            print(f"Erro ao exportar áudio final: {traceback.format_exc()}")
+        raise RuntimeError(f"Falha ao exportar áudio com pausas: {e}")
+    
+    return caminho_final
+
+async def gerar_audio_normal(texto: str, voz: str, taxa: str, formato: str) -> str:
+    """
+    Gera o áudio normalmente usando edge-tts (código original).
+    """
     # Cria um ficheiro temporário para a saída inicial do edge-tts (sempre mp3)
     ficheiro_temp_mp3 = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
     caminho_temp_mp3 = ficheiro_temp_mp3.name
