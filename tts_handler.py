@@ -133,11 +133,11 @@ async def gerar_audio_normal(texto: str, voz: str, taxa: str, formato: str) -> s
 
     try:
         # 1. Gera o áudio com edge-tts e salva como MP3
-        comunicador = edge_tts.Communicate(texto, voz_edge_tts, rate=taxa, proxy=PROXY)
+        comunicador = edge_tts.Communicate(texto, voz=voz, rate=taxa, proxy=PROXY)
         await comunicador.save(caminho_temp_mp3)
 
         # 2. Converte o áudio se o formato de resposta for diferente de mp3
-        if formato_resposta.lower() != "mp3":
+        if formato.lower() != "mp3":
             # Cria um novo ficheiro temporário para o formato final
             ficheiro_temp_final = tempfile.NamedTemporaryFile(delete=False, suffix=f".{formato_resposta}")
             caminho_final_audio = ficheiro_temp_final.name
@@ -145,7 +145,7 @@ async def gerar_audio_normal(texto: str, voz: str, taxa: str, formato: str) -> s
 
             # Usa pydub para carregar o MP3 e exportar no formato desejado
             audio = AudioSegment.from_mp3(caminho_temp_mp3)
-            audio.export(caminho_final_audio, format=formato_resposta.lower())
+            audio.export(caminho_final_audio, format=formato.lower())
             
             # Remove o ficheiro mp3 intermediário
             Path(caminho_temp_mp3).unlink()
