@@ -2,6 +2,7 @@ import fastapi
 from fastapi import Request, HTTPException, BackgroundTasks, Depends
 from fastapi.responses import FileResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 import os
 import traceback
@@ -15,6 +16,15 @@ from utils import (obter_env_bool, TIPOS_MIME_AUDIO,
 
 # Configuração de segurança para Swagger UI
 security = HTTPBearer()
+
+# --- Modelo de Request Body ---
+class TTSRequest(BaseModel):
+    """Modelo para requisição de geração de áudio"""
+    input: str = Field(..., description="Texto a ser convertido em áudio", example="Olá, bem-vindo ao sistema!")
+    model: str = Field(default="tts-1", description="Modelo de TTS", example="tts-1")
+    voice: str | None = Field(default=None, description="Voz (apelido ou nome técnico)", example="pt-BR-ThalitaMultilingualNeural")
+    response_format: str = Field(default="mp3", description="Formato do áudio", example="mp3")
+    speed: float = Field(default=1.0, ge=0.25, le=4.0, description="Velocidade (0.25 a 4.0)", example=1.0)
 
 # Inicializa a aplicação FastAPI e carrega as variáveis de ambiente.
 app = fastapi.FastAPI()
@@ -54,14 +64,13 @@ async def verificar_chave_api(credentials: HTTPAuthorizationCredentials = Depend
 
 # --- Rota Principal de Geração de Áudio ---
 @app.post("/v1/audio/speech", dependencies=[Depends(verificar_chave_api)])
-async def text_to_speech(request: Request, background_tasks: BackgroundTasks):
+async def text_to_speech(request_data: TTSRequest, background_tasks: BackgroundTasks):
     """
     Endpoint principal que recebe texto e retorna o áudio sintetizado.
     Compatível com a API da OpenAI.
     """
     try:
-        dados = await request.json()
-        texto = dados.get('input')
+        texto = request_data.input
         if not texto:
             raise HTTPException(status_code=400, detail="O campo 'input' é obrigatório.")
 
@@ -70,9 +79,9 @@ async def text_to_speech(request: Request, background_tasks: BackgroundTasks):
             texto = preparar_texto_para_tts(texto)
 
         # Obtém os parâmetros da requisição ou usa os padrões
-        voz = dados.get('voice', VOZ_PADRAO)
-        formato_resposta = dados.get('response_format', FORMATO_RESPOSTA_PADRAO)
-        velocidade = float(dados.get('speed', VELOCIDADE_PADRAO))
+        voz = request_data.voice if request_data.voice else VOZ_PADRAO
+        formato_resposta = request_data.response_format
+        velocidade = request_data.speed
         tipo_mime = TIPOS_MIME_AUDIO.get(formato_resposta, "audio/mpeg")
 
         # Gera o áudio de forma assíncrona
