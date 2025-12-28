@@ -139,7 +139,7 @@ async def gerar_audio_normal(texto: str, voz: str, taxa: str, formato: str) -> s
         # 2. Converte o áudio se o formato de resposta for diferente de mp3
         if formato.lower() != "mp3":
             # Cria um novo ficheiro temporário para o formato final
-            ficheiro_temp_final = tempfile.NamedTemporaryFile(delete=False, suffix=f".{formato_resposta}")
+            ficheiro_temp_final = tempfile.NamedTemporaryFile(delete=False, suffix=f".{formato}")
             caminho_final_audio = ficheiro_temp_final.name
             ficheiro_temp_final.close()
 
