@@ -1,6 +1,7 @@
 import fastapi
 from fastapi import Request, HTTPException, BackgroundTasks, Depends
 from fastapi.responses import FileResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 import os
 import traceback
@@ -11,6 +12,9 @@ from handle_text import preparar_texto_para_tts
 from tts_handler import gerar_audio, DADOS_MODELOS
 from utils import (obter_env_bool, TIPOS_MIME_AUDIO, 
                    LOG_ERROS_DETALHADO, EXIGIR_CHAVE_API, CHAVE_API)
+
+# Configuração de segurança para Swagger UI
+security = HTTPBearer()
 
 # Inicializa a aplicação FastAPI e carrega as variáveis de ambiente.
 app = fastapi.FastAPI()
@@ -25,23 +29,27 @@ REMOVER_FILTRO = obter_env_bool('REMOVE_FILTER', DEFAULT_CONFIGS.get("REMOVE_FIL
 
 
 # --- Função de Segurança (Dependência) ---
-async def verificar_chave_api(request: Request):
+async def verificar_chave_api(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """
     Verifica se a chave de API fornecida no cabeçalho 'Authorization' é válida.
     Esta função é usada como uma dependência nas rotas protegidas.
     """
     if not EXIGIR_CHAVE_API:
         return
+    
     if not CHAVE_API:
-        raise HTTPException(status_code=500, detail="Servidor não configurado para autenticação. A variável API_KEY não foi definida.")
+        raise HTTPException(
+            status_code=500, 
+            detail="Servidor não configurado para autenticação. A variável API_KEY não foi definida."
+        )
     
-    auth_header = request.headers.get('Authorization')
-    if not auth_header or not auth_header.startswith('Bearer '):
-        raise HTTPException(status_code=401, detail="Chave de API ausente ou em formato inválido. Use o cabeçalho 'Authorization: Bearer SUA_CHAVE'.")
+    if credentials.credentials != CHAVE_API:
+        raise HTTPException(
+            status_code=401, 
+            detail="Chave de API inválida."
+        )
     
-    token_fornecido = auth_header.split('Bearer ')[1]
-    if token_fornecido != CHAVE_API:
-        raise HTTPException(status_code=401, detail="Chave de API inválida.")
+    return credentials.credentials
 
 
 # --- Rota Principal de Geração de Áudio ---
