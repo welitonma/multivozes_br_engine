@@ -133,7 +133,7 @@ async def gerar_audio_normal(texto: str, voz: str, taxa: str, formato: str) -> s
 
     try:
         # 1. Gera o áudio com edge-tts e salva como MP3
-        comunicador = edge_tts.Communicate(texto, voz=voz, rate=taxa, proxy=PROXY)
+        comunicador = edge_tts.Communicate(texto, voz, rate=taxa, proxy=PROXY)
         await comunicador.save(caminho_temp_mp3)
 
         # 2. Converte o áudio se o formato de resposta for diferente de mp3
