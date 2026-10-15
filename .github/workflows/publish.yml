@@ -8,6 +8,8 @@ on:
   pull_request:
     branches: [master]
   workflow_dispatch:  # Permite acionar manualmente
+  schedule:
+    - cron: '0 6 * * 1'  # Toda segunda: reconstrói a imagem com o edge-tts mais recente
 
 jobs:
   build-and-push:
@@ -64,6 +66,7 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          no-cache: ${{ github.event_name == 'schedule' }}  # rebuild semanal precisa reinstalar as dependências
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: false
