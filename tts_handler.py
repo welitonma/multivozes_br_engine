@@ -86,6 +86,8 @@ async def gerar_audio_com_pausas(texto: str, voz: str, taxa: str, formato: str) 
             except Exception as e:
                 if LOG_ERROS_DETALHADO:
                     print(f"Erro ao gerar segmento de áudio: {e}")
+                # Não devolver áudio parcial: propaga o erro para a API responder 5xx
+                raise RuntimeError(f"Falha ao gerar segmento de áudio: {e}") from e
         
         # Se há informação de pausa (tempo + unidade), adicionar silêncio
         if i + 2 < len(partes):
