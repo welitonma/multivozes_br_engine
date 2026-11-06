@@ -1,0 +1,3 @@
+[submodule ".estrutura"]
+	path = .estrutura
+	url = git@github.com:welitonma/estrutura.git
