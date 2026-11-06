@@ -1,0 +1,12 @@
+{"ts":"2026-11-06T10:41:30.780Z","action":"MANIFEST_CHECKPOINT","task":"DOC-001","actor":"check-manifest","note":"0/5 unidades terminais, 0 redespachos sem progresso"}
+{"ts":"2026-11-06T11:40:45.158Z","action":"STATE_TRANSITION","task":"DOC-001","from":"PLANNED","to":"IN_PROGRESS","actor":"doc-worker","note":"inicio do despacho"}
+{"ts": "2026-11-06T11:41:12.000Z", "action": "UNIT_DONE", "task": "DOC-001", "actor": "doc-worker", "note": "unidade main concluida -> docs/aplicacao/main.md"}
+{"ts": "2026-11-06T11:41:31.000Z", "action": "UNIT_DONE", "task": "DOC-001", "actor": "doc-worker", "note": "unidade tts-handler concluida -> docs/aplicacao/tts-handler.md"}
+{"ts": "2026-11-06T11:41:48.000Z", "action": "UNIT_DONE", "task": "DOC-001", "actor": "doc-worker", "note": "unidade texto-config-utils concluida -> docs/aplicacao/texto-config-utils.md"}
+{"ts":"2026-11-06T11:41:58.217Z","action":"MANIFEST_CHECKPOINT","task":"DOC-001","actor":"check-manifest","note":"3/5 unidades terminais, 0 redespachos sem progresso"}
+{"ts": "2026-11-06T11:43:29.000Z", "action": "UNIT_DONE", "task": "DOC-001", "actor": "doc-worker", "note": "unidade deploy concluida -> docs/aplicacao/deploy.md"}
+{"ts": "2026-11-06T11:44:17.000Z", "action": "UNIT_DONE", "task": "DOC-001", "actor": "doc-worker", "note": "unidade docs-existentes concluida -> docs/aplicacao/docs-existentes.md"}
+{"ts":"2026-11-06T11:44:27.089Z","action":"MANIFEST_CHECKPOINT","task":"DOC-001","actor":"check-manifest","note":"5/5 unidades terminais, 0 redespachos sem progresso"}
+{"ts":"2026-11-06T11:44:43.140Z","action":"STATE_TRANSITION","task":"DOC-001","from":"IN_PROGRESS","to":"CONSOLIDATING","actor":"orquestrador","note":"5/5 unidades done; consolidacao"}
+{"ts":"2026-11-06T11:47:42Z","action":"REPORT_CREATED","task":"DOC-001","actor":"doc-worker","note":"consolidacao -> docs/aplicacao/README.md"}
+{"ts":"2026-11-06T11:48:10.599Z","action":"STATE_TRANSITION","task":"DOC-001","from":"CONSOLIDATING","to":"DONE","actor":"orquestrador","note":"consolidacao entregue e conferida"}
