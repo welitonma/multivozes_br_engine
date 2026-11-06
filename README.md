@@ -247,5 +247,11 @@ Acesse a documentação interativa (Swagger UI) para testar a API em:
 - **Remoto:** http://SEU_IP:5050/docs
 ```
 
+---
+
+## 🛠️ Desenvolvimento
+
+Para montar o ambiente de desenvolvimento (Python 3.11, venv, ruff e pytest), consulte o [guia de desenvolvimento](docs/desenvolvimento.md).
+
 
 

@@ -1,0 +1,14 @@
+# Ambiente local
+.env
+.venv/
+
+# Bytecode / caches Python
+__pycache__/
+*.pyc
+
+# Caches de ferramentas de dev
+.pytest_cache/
+.ruff_cache/
+
+# Build de pacotes
+*.egg-info/
