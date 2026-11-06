@@ -28,7 +28,10 @@ Gera áudio a partir de texto e devolve o arquivo de áudio.
     genérico e vira HTTP 500. Ou seja, `speed` entre 2.0 e 4.0 passa na
     validação do modelo mas falha na geração (erro 500).
 - **Autenticação:** dependência `verificar_chave_api` (`main.py:66`,
-  definida em `main.py:42-63`).
+  definida em `main.py:42-63`). **Bug conhecido:** sem o cabeçalho
+  `Authorization`, `HTTPBearer()` (`main.py:18`) rejeita a requisição antes
+  de a função ser chamada (ver seção "Autenticação — `verificar_chave_api`"
+  abaixo).
 - **Fluxo interno:**
   1. Se `REMOVER_FILTRO` for falso, aplica `preparar_texto_para_tts(texto)`
      (`main.py:75-77`).
@@ -46,7 +49,11 @@ Gera áudio a partir de texto e devolve o arquivo de áudio.
   correspondente.
 - **Erros:**
   - `400` — campo `input` vazio/ausente.
-  - `401` — chave de API inválida (via dependência).
+  - `403` — cabeçalho `Authorization` ausente (rejeitado por `HTTPBearer()`
+    em `main.py:18` antes de `verificar_chave_api`; em FastAPI/Starlette mais
+    novos o código é `401`). Vale mesmo com `REQUIRE_API_KEY=false` (bug
+    conhecido, ainda não corrigido no código).
+  - `401` — chave de API inválida (via dependência, com a exigência ativa).
   - `500` — `CHAVE_API` não configurada quando a exigência está ativa; qualquer
     exceção em `gerar_audio` (incluindo `speed > 2.0`) vira
     `HTTPException 500 "Erro interno no servidor: ..."` (`main.py:95-99`).
@@ -64,7 +71,15 @@ Gera áudio a partir de texto e devolve o arquivo de áudio.
 
 Dependência FastAPI baseada em `HTTPBearer()` (`main.py:18`):
 
-- Se `EXIGIR_CHAVE_API` for falso, libera sem checar (`main.py:48-49`).
+- Se `EXIGIR_CHAVE_API` for falso, `verificar_chave_api` retorna sem checar
+  (`main.py:48-49`). **Bug conhecido (não corrigido no código):** na prática a
+  requisição sem cabeçalho `Authorization` nunca chega até essa função,
+  porque `HTTPBearer()` usa `auto_error=True` por padrão e o FastAPI rejeita
+  a requisição antes — HTTP 403 nas versões fixadas do `requirements.txt`,
+  HTTP 401 em FastAPI/Starlette mais novos (verificado por teste do
+  orquestrador em ambiente descartável). Ou seja, mesmo com
+  `REQUIRE_API_KEY=false` é preciso enviar `Authorization: Bearer
+  <qualquer-valor>` para alcançar a rota.
 - Se a exigência está ativa mas `CHAVE_API` está vazia/não definida → HTTP 500
   (`main.py:51-56`).
 - Se `credentials.credentials != CHAVE_API` → HTTP 401 (`main.py:58-62`).
@@ -98,12 +113,16 @@ Autenticação e logging vêm de `utils.py`: `API_KEY` (padrão `None`),
 
 - Executar: `python main.py` — sobe Uvicorn em `0.0.0.0:$PORT`
   (`main.py:111-122`; banner informativo impresso antes).
-- Teste manual (sem autenticação, com `REQUIRE_API_KEY=false`):
+- Teste manual (sem checagem de chave, com `REQUIRE_API_KEY=false`):
   `POST http://localhost:5050/v1/audio/speech` com JSON
-  `{"input": "Olá", "voice": "pt-BR-ThalitaMultilingualNeural"}`; verificar que
-  a resposta é áudio e que o arquivo temporário foi removido após o envio.
+  `{"input": "Olá", "voice": "pt-BR-ThalitaMultilingualNeural"}` **e um
+  cabeçalho `Authorization: Bearer <qualquer-valor>`** (exigido por bug
+  conhecido em `HTTPBearer()`, `main.py:18`, mesmo com a checagem desligada);
+  verificar que a resposta é áudio e que o arquivo temporário foi removido
+  após o envio.
 - Teste de autenticação: com `REQUIRE_API_KEY=true` e `API_KEY=xxx`, chamar sem
-  cabeçalho `Authorization: Bearer xxx` deve retornar erro (401/403); com a
-  chave correta deve gerar áudio. **Não verificado:** este comportamento de erro
-  sem cabeçalho não foi executado neste despacho (servidor não foi iniciado,
-  conforme limites da tarefa).
+  cabeçalho `Authorization: Bearer xxx` deve retornar erro (403 nas versões
+  fixadas do `requirements.txt`; 401 em FastAPI/Starlette mais novos); com a
+  chave correta deve gerar áudio. Comportamento sem cabeçalho **verificado por
+  teste do orquestrador em ambiente descartável, versões fixadas** (sem
+  cabeçalho → 403; com qualquer `Bearer x` e `REQUIRE_API_KEY=false` → 200).

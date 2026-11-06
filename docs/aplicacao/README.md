@@ -26,10 +26,15 @@ na raiz do repositório estão inventariados à parte.
 
 ## Fluxo de uma requisição `POST /v1/audio/speech`
 
-1. Autenticação: `verificar_chave_api` libera sem checar se
-   `REQUIRE_API_KEY=false`; senão exige `Authorization: Bearer <API_KEY>`
-   (401 se inválida; 500 se a exigência está ativa mas `API_KEY` não foi
-   definida).
+1. Autenticação: com `REQUIRE_API_KEY=false`, `verificar_chave_api`
+   (`main.py:42-63`) retorna sem checar a chave — **mas** `HTTPBearer()`
+   (`main.py:18`, `auto_error=True`) rejeita antes qualquer requisição sem o
+   cabeçalho `Authorization` (403 nas versões fixadas do `requirements.txt`;
+   401 em FastAPI/Starlette mais novos). Na prática, envie sempre
+   `Authorization: Bearer <valor-qualquer>` com a checagem desligada e
+   `Authorization: Bearer <API_KEY>` com ela ligada (401 se inválida; 500 se
+   a exigência está ativa mas `API_KEY` não foi definida). Bug conhecido do
+   código, ainda não corrigido — ver item 14 das lacunas.
 2. Validação: `input` vazio gera 400; `speed` é validado pelo Pydantic
    (`0.25–4.0` — ver discrepância conhecida abaixo sobre `speed > 2.0`).
 3. Se `REMOVE_FILTER` for falso, aplica `preparar_texto_para_tts`.
@@ -59,7 +64,7 @@ na raiz do repositório estão inventariados à parte.
 | `DEFAULT_SPEED` | `1.0` | `main.py:37` (`VELOCIDADE_PADRAO`) | **Não** — a velocidade efetiva vem sempre de `request_data.speed` (padrão `1.0`). |
 | `REMOVE_FILTER` | `False` | `main.py:38` via `obter_env_bool` | Sim — `True` desativa `preparar_texto_para_tts`. |
 | `API_KEY` | `None` | `utils.py:14` (`CHAVE_API`) | Sim — comparada com o Bearer Token quando `REQUIRE_API_KEY=true`. |
-| `REQUIRE_API_KEY` | `True` | `utils.py:15` (`EXIGIR_CHAVE_API`) | Sim — `False` libera todas as rotas protegidas. |
+| `REQUIRE_API_KEY` | `True` | `utils.py:15` (`EXIGIR_CHAVE_API`) | Em tese sim — `False` faz `verificar_chave_api` retornar sem checar; mas bug conhecido em `HTTPBearer()` (`main.py:18`) ainda exige o cabeçalho `Authorization` (ver item 14 das lacunas). |
 | `DETAILED_ERROR_LOGGING` | `True` | `utils.py:16` (`LOG_ERROS_DETALHADO`) | Sim — controla impressão de tracebacks no console. |
 | `PROXY` | `None` | `tts_handler.py:16` | Sim — repassado a `edge_tts.Communicate`; `None` = sem proxy. |
 | `DEFAULT_LANGUAGE` | `pt-BR` | só declarada em `config.py:10` | **Não** — nenhuma referência no código (confirmado por busca; só existe em `config.py` e no `.env.example:33`). |
@@ -106,9 +111,10 @@ despacho).
    `alloy`→`en-US-AndrewMultilingualNeural`) diferente do `voices.json` efetivo
    (ex.: `alloy`→`pt-BR-ThalitaMultilingualNeural`). Qual está vigente em
    produção: **não verificado**.
-10. **Comportamento sem cabeçalho `Authorization`** (401/403) **não executado**;
-    presença do `ffmpeg` no ambiente e formatos além de `mp3` **não testados**;
+10. Presença do `ffmpeg` no ambiente e formatos além de `mp3` **não testados**;
     nenhum comando de deploy, instalação, `curl`, n8n ou systemd foi executado.
+    (O comportamento sem cabeçalho `Authorization` foi verificado por teste do
+    orquestrador em ambiente descartável — ver item 14.)
 11. **Ordem das transformações em `handle_text.py`** (imagem Markdown vs regra
     de link; bloco de código vs remoção de símbolos): comportamento confirmado
     só por leitura, **não verificado** com execução.
@@ -121,6 +127,18 @@ despacho).
     regex de pausas `74` → `71`, `Communicate/save` `143-144` → `138-139`,
     traceback de segmento `91-92` → `87-88`, `unlink` de segmento `87` → `85`,
     `AudioSegment.silent` `101` → `102`.
+14. **`REQUIRE_API_KEY=false` ainda exige o cabeçalho `Authorization`** (bug
+    conhecido do código, **verificado por teste do orquestrador em ambiente
+    descartável, versões fixadas**): `security = HTTPBearer()` (`main.py:18`)
+    usa `auto_error=True` por padrão, então o FastAPI rejeita a requisição sem
+    cabeçalho antes de `verificar_chave_api` (`main.py:42-63`) chegar a checar
+    `EXIGIR_CHAVE_API`. Medido: com `REQUIRE_API_KEY=false`,
+    `POST /v1/audio/speech` sem cabeçalho → HTTP 403; com qualquer
+    `Authorization: Bearer x` → HTTP 200. Em FastAPI/Starlette mais novos
+    (Starlette 1.x) a ausência do cabeçalho devolve 401 em vez de 403
+    (também medido). Documentado como bug conhecido, não como comportamento
+    desejado — ver `main.md` (seções da rota, de `verificar_chave_api` e "Como
+    executar e testar").
 
 ## O que esta consolidação fez e não fez
 

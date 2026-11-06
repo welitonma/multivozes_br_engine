@@ -10,3 +10,8 @@
 {"ts":"2026-11-06T11:44:43.140Z","action":"STATE_TRANSITION","task":"DOC-001","from":"IN_PROGRESS","to":"CONSOLIDATING","actor":"orquestrador","note":"5/5 unidades done; consolidacao"}
 {"ts":"2026-11-06T11:47:42Z","action":"REPORT_CREATED","task":"DOC-001","actor":"doc-worker","note":"consolidacao -> docs/aplicacao/README.md"}
 {"ts":"2026-11-06T11:48:10.599Z","action":"STATE_TRANSITION","task":"DOC-001","from":"CONSOLIDATING","to":"DONE","actor":"orquestrador","note":"consolidacao entregue e conferida"}
+{"ts":"2026-11-06T12:06:43.139Z","action":"STATE_TRANSITION","task":"DOC-002","from":"PLANNED","to":"IN_PROGRESS","actor":"doc-worker","note":"inicio do despacho"}
+{"ts":"2026-11-06T12:07:26Z","action":"UNIT_DONE","task":"DOC-002","actor":"doc-worker","note":"unidade auth-exige-cabecalho concluida -> docs/aplicacao/main.md + docs/aplicacao/README.md"}
+{"ts":"2026-11-06T12:07:48.620Z","action":"MANIFEST_CHECKPOINT","task":"DOC-002","actor":"check-manifest","note":"1/1 unidades terminais, 0 redespachos sem progresso"}
+{"ts":"2026-11-06T12:07:48.639Z","action":"STATE_TRANSITION","task":"DOC-002","from":"IN_PROGRESS","to":"CONSOLIDATING","actor":"orquestrador","note":"1/1 unidade done; sem consolidacao extra"}
+{"ts":"2026-11-06T12:07:48.657Z","action":"STATE_TRANSITION","task":"DOC-002","from":"CONSOLIDATING","to":"DONE","actor":"orquestrador","note":"correcao conferida contra o codigo e o teste medido"}

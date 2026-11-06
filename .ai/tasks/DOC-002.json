@@ -1,0 +1,26 @@
+{
+  "id": "DOC-002",
+  "type": "doc",
+  "title": "Corrigir documentacao: REQUIRE_API_KEY=false ainda exige cabecalho Authorization",
+  "status": "DONE",
+  "output_dir": "docs/aplicacao/",
+  "max_units_per_agent": 3,
+  "max_calls_per_unit": 6,
+  "max_resumes_without_progress": 2,
+  "resumes_without_progress": 0,
+  "last_progress_count": 1,
+  "human_approval_required": true,
+  "units": [
+    {
+      "id": "auth-exige-cabecalho",
+      "source": "main.py (linhas 18 e 42-63)",
+      "status": "done",
+      "output": "docs/aplicacao/main.md",
+      "attempts": 1,
+      "last_error": null
+    }
+  ],
+  "created_at": "2026-11-06T00:00:00Z",
+  "updated_at": "2026-11-06T12:07:48.657Z",
+  "fix_cycles_used": 0
+}
