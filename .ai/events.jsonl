@@ -15,3 +15,10 @@
 {"ts":"2026-11-06T12:07:48.620Z","action":"MANIFEST_CHECKPOINT","task":"DOC-002","actor":"check-manifest","note":"1/1 unidades terminais, 0 redespachos sem progresso"}
 {"ts":"2026-11-06T12:07:48.639Z","action":"STATE_TRANSITION","task":"DOC-002","from":"IN_PROGRESS","to":"CONSOLIDATING","actor":"orquestrador","note":"1/1 unidade done; sem consolidacao extra"}
 {"ts":"2026-11-06T12:07:48.657Z","action":"STATE_TRANSITION","task":"DOC-002","from":"CONSOLIDATING","to":"DONE","actor":"orquestrador","note":"correcao conferida contra o codigo e o teste medido"}
+{"ts":"2026-11-06T12:08:45.814Z","action":"STATE_TRANSITION","task":"FEATURE-001","from":"SPEC_DRAFT","to":"SPEC_REVIEW","actor":"orquestrador","note":"spec curta Fase 0 pronta para revisao independente"}
+{"ts":"2026-11-06T16:30:17.565Z","action":"STATE_TRANSITION","task":"FEATURE-001","from":"SPEC_REVIEW","to":"READY_FOR_IMPLEMENTATION","actor":"humano","note":"spec aprovada"}
+{"ts":"2026-11-06T16:30:56.021Z","action":"STATE_TRANSITION","task":"FEATURE-001","from":"READY_FOR_IMPLEMENTATION","to":"IMPLEMENTING","actor":"worker","note":"inicio da implementacao"}
+{"ts":"2026-11-06T16:33:30.117Z","action":"STATE_TRANSITION","task":"FEATURE-001","from":"IMPLEMENTING","to":"CODE_REVIEW","actor":"worker","note":"implementacao concluida: 7 arquivos criados/alterados, AC1-AC9 com exit 0, imagem Docker removida"}
+{"ts":"2026-11-06T16:35:46.590Z","action":"STATE_TRANSITION","task":"FEATURE-001","from":"CODE_REVIEW","to":"TESTING","actor":"code-reviewer","note":"aprovado: AC1-AC9 e gates reproduzidos pelo revisor; 4 findings info/baixa, nenhum bloqueante"}
+{"ts":"2026-11-06T16:36:39.899Z","action":"STATE_TRANSITION","task":"FEATURE-001","from":"TESTING","to":"READY_FOR_HUMAN_APPROVAL","actor":"orquestrador","note":"QA independente dispensado (PLAYBOOK 3.5/7): revisor reproduziu AC1-AC9 e gates; required_check AC2 corrigido pelo orquestrador (loop; antes passava vazio) e provado com caso negativo"}
+{"ts":"2026-11-06T16:39:45.481Z","action":"STATE_TRANSITION","task":"FEATURE-001","from":"READY_FOR_HUMAN_APPROVAL","to":"MERGED","actor":"humano","note":"Fase 0 aprovada"}

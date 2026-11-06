@@ -1,0 +1,12 @@
+[tool.ruff]
+extend-exclude = [".estrutura", ".ai", ".venv"]
+select = ["E9", "F"]
+ignore = [
+    # baseline: corrigir na Fase 2 (1 ocorrência: F401 em main.py:2)
+    "F401",
+    # baseline: corrigir na Fase 2 (3 ocorrências: F541 em main.py:115, 116, 117)
+    "F541",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
