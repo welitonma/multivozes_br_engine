@@ -1,0 +1,74 @@
+{
+  "_comment_schema": "Documentação de todos os campos (descrições em pt-BR e defaults) em .estrutura.config.schema.json. A validação (node .estrutura/scripts/validate-config.mjs) emite SÓ avisos.",
+  "_comment": "requiredChecks sao comandos de shell literais - troque pelos do stack e do host real do projeto (Node/pnpm, PHP/Composer, Python/pytest, Go, etc.). Nada aqui pressupoe Node, Cloudflare ou qualquer host especifico - so guard.mjs/link.mjs/gates precisam rodar em Node, no ambiente onde o agente de IA trabalha (nao no host de producao do projeto).",
+  "projectName": "multivozes_br_engine",
+  "sensitivePatterns": [
+    ".env",
+    ".env.*",
+    "*.pem",
+    "*.key",
+    "*credentials*",
+    "*secret*",
+    "*token*",
+    "*.sqlite"
+  ],
+  "tempOkDirs": [
+    "tmp/",
+    ".tmp/",
+    "/tmp/"
+  ],
+  "_comment_guardPolicy": "Politica do guarda de seguranca (security-guard/guard.mjs): strict = conjunto original de regras de git (commit, push, reset --hard, clean -f, filter-repo, rebase -i, rm --cached, add -A); push-only = so git push em posicao de comando pede confirmacao. Nos dois modos, rm -rf fora de temp e toque em arquivo sensivel continuam valendo. Chave ausente = strict.",
+  "guardPolicy": "strict",
+  "requiredChecks": [
+    "<comando de lint>",
+    "<comando de typecheck/build>",
+    "<comando de test>"
+  ],
+  "_comment_reportChecks": "Camada 2 do check-gates: exige que os reports em .ai/reports/ estejam PREENCHIDOS, nao so que existam. evidence = tabela de comandos dos reports worker/test com exit code numerico e output real (nao ok/passou/ver CI). Chave ausente = checagem LIGADA (link.mjs nunca sobrescreve config existente, entao projeto antigo precisa herdar o comportamento estrito). Use false apenas para afrouxar de proposito.",
+  "reportChecks": {
+    "placeholders": true,
+    "verdict": true,
+    "answers": true,
+    "evidence": true
+  },
+  "_comment_agents": "Padrao de agente/modelo/esforco por papel (scripts/resolve-agent.mjs; enviar-brief.sh usa). O padrao vale sempre: trocar de modelo so quando o humano pedir. fallback = reserva SO se o primario falhar ao subir. Ajuste os ids para os do seu ambiente (elyra agents list; opencode models).",
+  "agents": {
+    "orquestrador": {
+      "agent": "claude",
+      "model": "claude-sonnet-5-5",
+      "effort": "medium"
+    },
+    "worker": {
+      "agent": "pi",
+      "model": "opencode-go/muse-spark-1.3-contributor",
+      "effort": "medium",
+      "fallback": {
+        "agent": "pi",
+        "model": "meta/muse-spark-1.3-contributor",
+        "effort": "medium"
+      }
+    },
+    "revisor": {
+      "agent": "pi",
+      "model": "opencode-go/muse-spark-1.3-contributor",
+      "effort": "medium",
+      "fallback": {
+        "agent": "pi",
+        "model": "meta/muse-spark-1.3-contributor",
+        "effort": "medium"
+      }
+    }
+  },
+  "_comment_limits": "Limites para a maquina nao cair. maxAgents = maximo de cards de agente abertos ao mesmo tempo (conta o orquestrador); status.mjs --cards avisa quando passa. Ajuste ao hardware.",
+  "limits": {
+    "maxAgents": 4
+  },
+  "_comment_jev": "Camada 3 do check-gates: verificacao semantica via Jev (typesafe.ai). DESLIGADA por default porque envia o conteudo dos reports para um terceiro - opt-in explicito por projeto. Roda em modo advisory: sinaliza e loga em events.jsonl, nunca muda o exit code. A key NUNCA vai aqui: vem da variavel de ambiente JEV_API_KEY.",
+  "jev": {
+    "enabled": false,
+    "model": "jev-latest",
+    "timeoutMs": 10000,
+    "noulThreshold": 0.5,
+    "maxStateChars": 24000
+  }
+}
