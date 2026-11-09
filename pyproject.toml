@@ -1,5 +1,7 @@
 [tool.ruff]
 extend-exclude = [".estrutura", ".ai", ".venv"]
+
+[tool.ruff.lint]
 select = ["E9", "F"]
 ignore = [
     # baseline: corrigir na Fase 2 (1 ocorrência: F401 em main.py:2)

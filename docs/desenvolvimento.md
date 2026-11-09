@@ -27,8 +27,37 @@ interpretador 3.11 não vem instalado nesta máquina.
 
 ```bash
 .venv/bin/ruff check .   # lint (regras E9 + F; baseline explícita no pyproject.toml)
-.venv/bin/pytest         # testes (testpaths = ["tests"]; os testes chegam na Fase 1)
+.venv/bin/pytest -q        # testes (testpaths = ["tests"])
 ```
+
+## O que os testes cobrem
+
+- `tests/test_handle_text.py`: limpeza de texto (`preparar_texto_para_tts`).
+- `tests/test_utils.py`: leitura de booleanos de ambiente e tipos MIME.
+- `tests/test_tts_handler.py`: conversão de velocidade e roteamento da síntese.
+- `tests/test_api.py`: rotas `GET /v1/models` e `POST /v1/audio/speech` via `TestClient`.
+
+## `xfail` estrito
+
+Os bugs conhecidos entram como `pytest.mark.xfail(strict=True)`: o teste
+descreve o comportamento CORRETO e hoje falha de propósito. Quando o bug for
+corrigido (Fase 2), o teste passa e o `xfail` estrito quebra (`xpassed`),
+forçando remover a marca. A suíte exige `0 xpassed`.
+
+## Rede bloqueada nos testes
+
+Uma fixture `autouse` em `tests/conftest.py` troca `socket.socket.connect`
+por uma função que levanta `AssertionError`. Nenhum teste chama o `edge-tts`
+real: a síntese é sempre simulada (`monkeypatch` em `main.gerar_audio`).
+
+## Como adicionar um teste
+
+1. Crie ou edite `tests/test_*.py` (o pytest coleta por esse padrão).
+2. Se o teste precisa de outra configuração, use
+   `monkeypatch.setattr(main, "NOME", valor)` — trocar `os.environ` depois
+do `import main` não tem efeito (a configuração é lida na importação).
+3. Para a rota de áudio, use as fixtures `client` e `audio_falso` do
+   `conftest.py`.
 
 ## Custo medido
 

@@ -1,5 +1,7 @@
 # Ambiente local
 .env
+.env.*
+!.env.example
 .venv/
 
 # Bytecode / caches Python
