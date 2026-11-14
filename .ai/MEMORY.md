@@ -9,7 +9,7 @@
 
 - API de texto-para-fala (TTS) compatível com a API da OpenAI, usando vozes do Edge TTS (`edge-tts`).
 - Python (a imagem Docker usa `python:3.11-slim`), FastAPI + Uvicorn, Pydantic, `pydub` (+ `ffmpeg`) para converter formato e inserir pausas.
-- Dependências em `requirements.txt` (versões fixadas, exceto `edge-tts>=7.3.1,<8`). Sem `pyproject.toml`, linter, type checker nem testes automatizados.
+- Dependências em `requirements.txt` (versões fixadas, exceto `edge-tts>=7.3.1,<8`). Desenvolvimento em `.venv` (Python 3.11, `requirements-dev.txt`): `pytest` (testes em `tests/`) e `ruff` (config em `pyproject.toml`); sem type checker. Ver `docs/desenvolvimento.md`.
 - Documentação técnica da aplicação: `docs/aplicacao/README.md` (índice). Pontos de entrada: `main.py` (rotas), `tts_handler.py` (síntese).
 
 ## Comandos que sempre funcionam aqui
@@ -19,7 +19,7 @@ python3 -c "import ast,sys; [ast.parse(open(f).read(), f) for f in sys.argv[1:]]
 python main.py                                  # sobe o servidor (porta 5050 por padrão; exige dependências instaladas)
 ```
 
-Não há lint, typecheck nem test configurados: não invente comandos para eles. Se o projeto passar a ter, atualize `requiredChecks` em `.estrutura.config.json`.
+Com o `.venv` criado: `PYTHONDONTWRITEBYTECODE=1 .venv/bin/pytest -q` e `.venv/bin/ruff check .`. Não há typecheck: não invente. O `requiredChecks` do `.estrutura.config.json` ainda é só a verificação de sintaxe (atualizar na Fase 4, com o CI).
 
 ## Convenções
 
@@ -29,8 +29,8 @@ Não há lint, typecheck nem test configurados: não invente comandos para eles.
 
 ## Problemas conhecidos (detalhes em `docs/aplicacao/README.md`)
 
-- `speed` entre 2.0 e 4.0 passa na validação da rota e gera HTTP 500 em `velocidade_para_taxa`.
-- `DEFAULT_RESPONSE_FORMAT`, `DEFAULT_SPEED`, `DEFAULT_LANGUAGE` e `EXPAND_API` não têm efeito no código.
+- Corrigidos na Fase 2 (PR em aberto): auth com `REQUIRE_API_KEY=false`, `speed` > 2.0 (agora 422), `DEFAULT_SPEED`/`DEFAULT_RESPONSE_FORMAT` (agora valem), `input` vazio (400); `DEFAULT_LANGUAGE`/`EXPAND_API` removidas; config inválida falha na inicialização.
+- `voices.json` mapeia 11 das 12 vozes OpenAI para vozes que não são pt-BR (só `alloy` é pt-BR): suspeito de áudio em outro idioma em produção (a investigar).
 - O `CHANGELOG.md` cita `voices.example.json`, que não existe.
 
 ## Preferências do time / do humano

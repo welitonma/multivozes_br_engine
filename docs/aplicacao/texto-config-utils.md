@@ -6,7 +6,7 @@
 
 `preparar_texto_para_tts` remove do texto tudo que o motor de voz não deve
 pronunciar (emojis, Markdown, HTML) antes da síntese. É chamada em
-`main.py:77` quando `REMOVE_FILTER` é falso.
+`main.py:100-101` quando `REMOVE_FILTER` é falso.
 
 ### Função `preparar_texto_para_tts(texto: str) -> str` (`handle_text.py:4-48`)
 
@@ -39,20 +39,19 @@ pronunciar (emojis, Markdown, HTML) antes da síntese. É chamada em
 
 `DEFAULT_CONFIGS` (`config.py:1-13`) centraliza os valores padrão usados quando
 a variável de ambiente correspondente não existe. Não lê ambiente — só declara
-o dicionário; a leitura está em `main.py:34-38` e `utils.py:14-16`.
+o dicionário; a leitura está em `main.py:34-52` e `utils.py:14-16`.
 
 ### Valores
 
 | Chave | Valor | Consumidor |
 |---|---|---|
-| `PORT` | `5050` | `main.py:34` (`int(os.getenv(...))`) |
+| `PORT` | `5050` | `main.py:36,39-40` (`int(os.getenv(...))`, faixa 1–65535) |
 | `API_KEY` | `None` | `utils.py:14` |
-| `DEFAULT_VOICE` | `pt-BR-ThalitaMultilingualNeural` | `main.py:35` |
-| `DEFAULT_RESPONSE_FORMAT` | `mp3` | `main.py:36` (lido mas **sem uso efetivo** — ver `main.md`) |
-| `DEFAULT_SPEED` | `1.0` | `main.py:37` (lido mas **sem uso efetivo** — ver `main.md`) |
-| `DEFAULT_LANGUAGE` | `pt-BR` | **Sem uso no código** (nenhuma referência fora daqui — confirmado por busca). |
+| `DEFAULT_VOICE` | `pt-BR-ThalitaMultilingualNeural` | `main.py:41` |
+| `DEFAULT_RESPONSE_FORMAT` | `mp3` | `main.py:42` (usado quando `response_format` é omitido — ver `main.md`; corrigido na Fase 2) |
+| `DEFAULT_SPEED` | `1.0` | `main.py:45,47` (usado quando `speed` é omitido — ver `main.md`; corrigido na Fase 2) |
 | `REQUIRE_API_KEY` | `True` | `utils.py:15` |
-| `REMOVE_FILTER` | `False` | `main.py:38` |
+| `REMOVE_FILTER` | `False` | `main.py:52` |
 | `DETAILED_ERROR_LOGGING` | `True` | `utils.py:16` |
 
 ## 3. `utils.py` — ambiente e constantes

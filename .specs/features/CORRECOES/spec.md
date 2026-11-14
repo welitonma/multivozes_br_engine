@@ -1,0 +1,42 @@
+# SPEC — Correções de código (Fase 2)
+
+**ID:** FEATURE-003 (CORRECOES)
+**Data:** 2026-11-09
+**Branch:** `fix/correcoes` (parte de `feat/testes`, que traz os 55 testes + 5 `xfail` estritos)
+**Escopo:** corrigir os bugs B1–B4, remover variáveis mortas, validar a configuração lida na importação e zerar o baseline do ruff. Cada correção é provada por teste (o `xfail` correspondente é removido). **Não** atualizar dependências nem Python (Fase 5), **não** mexer em Dockerfile, `requirements*.txt` nem `/v1/models`.
+
+## 1. Decisões do humano (já tomadas)
+
+- B1: com `REQUIRE_API_KEY=false` a rota passa **sem** cabeçalho `Authorization`.
+- B2: `speed` fora de 0.25–2.0 devolve **422** claro (suporte até 4.0 fica para depois).
+- B3: `DEFAULT_SPEED` e `DEFAULT_RESPONSE_FORMAT` passam a valer como padrão.
+- Remover `DEFAULT_LANGUAGE` e `EXPAND_API`.
+- `GET /v1/models` continua aberta (o `HEALTHCHECK` do Dockerfile depende dela).
+
+## 2. Mudanças
+
+1. **B1 (`main.py:18` e `verificar_chave_api`)**: `HTTPBearer(auto_error=False)`. Se `EXIGIR_CHAVE_API` é falso, retorna sem checar. Se verdadeiro, **nesta ordem**: (a) `CHAVE_API` ausente → 500 (como hoje; vem primeiro, mesmo sem cabeçalho); (b) `credentials is None` (cabeçalho ausente **ou** esquema diferente de Bearer, que o `HTTPBearer` com `auto_error=False` também devolve como `None`) → **401**; (c) chave errada → 401. Os dois 401 saem **com** o cabeçalho `WWW-Authenticate: Bearer` (uniforme). Efeito colateral aceito: sem cabeçalho e com checagem ligada, o status passa a ser sempre 401 (hoje 403 no Starlette 0.37; 401 em versões novas).
+2. **B2 (`TTSRequest.speed`)**: `le=2.0` (e descrição "0.25 a 2.0"). `speed` acima de 2.0 ou abaixo de 0.25 → 422 do Pydantic. `velocidade_para_taxa` não muda.
+3. **B3**: `TTSRequest.speed` e `TTSRequest.response_format` passam a `None` por padrão (`speed: float | None` mantendo `ge=0.25, le=2.0`; `response_format: str | None`). Na rota: `velocidade = request.speed if request.speed is not None else VELOCIDADE_PADRAO`; idem formato com `FORMATO_RESPOSTA_PADRAO`. Valor enviado pelo cliente sempre vence o padrão.
+4. **B4 (`text_to_speech`)**: `input` vazio → **400** (hoje 500, porque o `except Exception` reempacota o `HTTPException`). Adicionar `except HTTPException: raise` antes do `except Exception`. Texto que só fica vazio depois do filtro (ex.: só emoji) **não** entra nesta fase: manter o comportamento atual e registrá-lo em teste de caracterização, se ainda não existir.
+5. **Variáveis mortas**: remover `DEFAULT_LANGUAGE` de `config.py` e do `.env.example` (com o comentário), e `EXPAND_API` do `.env.example` (com o comentário). Conferir por busca que nenhum `.py` as usa.
+6. **Configuração inválida na importação** (`main.py:34-37`): `PORT` não inteiro (ou fora de 1–65535), `DEFAULT_SPEED` não numérico ou fora de 0.25–2.0 e `DEFAULT_RESPONSE_FORMAT` fora das chaves de `TIPOS_MIME_AUDIO` devem falhar **na inicialização com mensagem clara em português**, que cita o nome da variável e o valor recebido (não mais `ValueError: invalid literal` solto). **Onde e como (sem ambiguidade):** a validação mora em `main.py:34-37` (`TIPOS_MIME_AUDIO` já é importado ali); **não** criar helper em `utils.py` nem tocar `utils.py`/`tts_handler.py`. Levantar `RuntimeError` (o traceback vai para **stderr**) cuja mensagem começa exatamente com `Configuração inválida: NOME='valor'` (ex.: `Configuração inválida: PORT='abc' (esperado inteiro de 1 a 65535)`), seguido do que era esperado. Os testes e o AC6 procuram esse trecho literal em stdout+stderr.
+7. **Baseline do ruff**: remover o import não usado `Request` (`main.py:2`, F401) e o `f` sem placeholder em `main.py:115-117` (F541); apagar `ignore` e seu comentário de `pyproject.toml` (manter `select = ["E9","F"]` em `[tool.ruff.lint]` e o `extend-exclude`). Remover também o `import os` sem uso em `tests/test_utils.py:3` (F401). São 5 ocorrências no total (4 em `main.py` + 1 em `tests/test_utils.py`). `ruff check .` continua sem aviso, agora sem `ignore`.
+8. **Testes** (`tests/`): remover as 5 marcas `xfail` (B1, B2, B3 ×2, B4) e deixar cada teste como teste normal passando; ajustar as caracterizações que o novo comportamento contradiz (ex.: texto vazio 500→400, "401 ou 403" → 401); acrescentar: `speed=2.0` e `0.25` aceitos, `speed=2.01`/`0.24` → 422; cliente que envia `speed`/`response_format` vence o padrão; chave errada, esquema `Basic` e sem cabeçalho → 401 com checagem ligada; configuração inválida (item 6) testada em **subprocesso** (`subprocess.run([sys.executable, "-c", "import sys; sys.path.insert(0, RAIZ); import main"], env=..., capture_output=True, text=True)`, com `RAIZ` derivada de `__file__`; **sem `-I`** porque ele implica `-P` e não acha o módulo; env mínimo explícito contendo `PATH`, `PYTHONDONTWRITEBYTECODE=1`, `REQUIRE_API_KEY=false`, `API_KEY=teste` e a variável inválida do caso — como `load_dotenv` não sobrescreve variável já definida, um `.env` real não muda o resultado das variáveis fixadas; sem rede) conferindo código de saída ≠ 0 e o trecho literal `Configuração inválida: NOME='valor'` em stdout+stderr, para `PORT=abc`, `PORT=0`, `PORT=70000`, `DEFAULT_SPEED=abc`, `DEFAULT_SPEED=9` e `DEFAULT_RESPONSE_FORMAT=xyz`; a ausência de `DEFAULT_LANGUAGE`/`EXPAND_API` é testada lendo **somente** `config.py` e `.env.example`. A mensagem 422 do `speed` fora da faixa é a do Pydantic (em inglês) e basta: o teste confere o status 422 e que o detalhe aponta o campo `speed`. Nenhum teste pode depender de rede nem de `.env`.
+9. **Documentação tocada** (só o que fica falso com as mudanças; o restante é Fase 3): `docs/aplicacao/` (main.md, tts-handler.md — linhas 28-29 e 121-122 afirmam `2.0 < speed <= 4.0 → 500` e ficam falsas —, texto-config-utils.md, deploy.md, README.md: tabelas de variáveis, "Lacunas conhecidas", fluxo da requisição, item 14 de B1) e `docs/desenvolvimento.md` (trecho sobre `xfail`). Os bugs corrigidos saem de "bugs conhecidos" e passam a "corrigido na Fase 2". Português do Brasil.
+
+## 3. Critérios de aceitação
+
+- AC1: `PYTHONDONTWRITEBYTECODE=1 .venv/bin/pytest -q` → exit 0, **0 xfailed**, 0 xpassed, 0 failed, e `PYTHONDONTWRITEBYTECODE=1 .venv/bin/pytest --collect-only -q | grep -c '::'` ≥ 60.
+- AC2: `.venv/bin/ruff check .` → exit 0; `grep -nE "ignore|F401|F541" pyproject.toml` não encontra `ignore`; `ruff check --select E9,F --no-cache --isolated .` limpo.
+- AC3: `grep -rn "xfail(" tests/` → vazio (a docstring de `tests/test_api.py:1` pode continuar citando a palavra, sem parêntese).
+- AC4: `grep -rnE "DEFAULT_LANGUAGE|EXPAND_API" --include='*.py' --include='.env.example' --exclude-dir=.venv --exclude-dir=.ai --exclude-dir=.specs --exclude-dir=.estrutura --exclude-dir=.git .` → sem resultado.
+- AC5 (mutação em cópia em `.ai/tmp/`, nunca no original): reverter cada correção na cópia (voltar `HTTPBearer()`, `le=4.0`, ignorar os padrões, remover `except HTTPException: raise`) derruba ≥ 1 teste em cada caso.
+- AC6: `out=$(PORT=abc PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -c "import sys; sys.path.insert(0, '.'); import main" 2>&1); rc=$?; test $rc -ne 0 && echo "$out" | grep -q "Configuração inválida: PORT='abc'"`; idem `DEFAULT_SPEED=9`. (Medir também que, sem a correção, o `grep` falha: o traceback antigo cita `PORT` mas não esse trecho.)
+- AC7: `git diff --name-only` só toca `allowed_paths` do contract (mais artefatos do protocolo); `Dockerfile`, `requirements*.txt` e `voices.json` intactos.
+- AC8: `git grep -n "DEFAULT_LANGUAGE\|EXPAND_API" -- docs/aplicacao/ docs/desenvolvimento.md .env.example config.py` → vazio; e `git grep -n -i -E "bug conhecido|ainda não corrigid|lacuna|sem uso|sem efeito|discrepância|403" -- docs/aplicacao/ docs/desenvolvimento.md` → o que sobrar é revisado à mão pelo revisor de código: nenhum resíduo pode afirmar que B1–B4 seguem abertos (menções históricas a "corrigido na Fase 2" são permitidas).
+- AC9: `find . -name __pycache__ -not -path './.venv/*' -not -path './.estrutura/*' -not -path './.ai/tmp/*'` → vazio ao final (o worker limpa o que criar; use `PYTHONDONTWRITEBYTECODE=1` em todo comando Python) e `test ! -e .env` (o worker não lê nem cria `.env`).
+
+## 4. Fora do escopo (próximas fases)
+
+README duplicado, systemd, versões de Python, tabelas de vozes e `voices.example.json` (Fase 3); CI (Fase 4); `json_schema_extra`, dependências sem uso e atualização de versões (Fase 5); `/v1/models` e `speed` até 4.0 (reavaliar depois).

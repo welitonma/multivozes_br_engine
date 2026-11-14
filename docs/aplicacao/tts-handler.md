@@ -5,7 +5,7 @@
 `tts_handler.py` concentra a síntese de voz: converte o parâmetro `speed` para o
 formato de taxa do `edge-tts`, resolve apelidos de voz via `voices.json`, gera o
 áudio (com ou sem pausas customizadas `[pause: ...]`) e converte o formato com
-`pydub`. É chamado por `main.py:88` via `gerar_audio`.
+`pydub`. É chamado por `main.py:110` via `gerar_audio`.
 
 ## Funções
 
@@ -25,8 +25,9 @@ formato de taxa do `edge-tts`, resolve apelidos de voz via `voices.json`, gera o
 - Converte multiplicador em taxa do edge-tts: `percentagem = int((v - 1) * 100)`;
   devolve `"+N%"` se `>= 0`, senão `"N%"` (ex.: `1.5 → "+50%"`, `0.5 → "-50%"`).
 - **Validação:** levanta `ValueError("A velocidade deve estar entre 0.25 e 2.0.")`
-  fora de `0.25–2.0` (`tts_handler.py:44-45`). Como `main.py` aceita até `4.0`
-  no modelo Pydantic, valores `2.0 < speed <= 4.0` resultam em HTTP 500.
+  fora de `0.25–2.0` (`tts_handler.py:44-45`). O modelo Pydantic em `main.py`
+  aceita a mesma faixa (`0.25–2.0`, corrigido na Fase 2), então valores fora
+  dela são rejeitados com HTTP 422 antes de chegar aqui.
 
 ### `gerar_audio(texto, voz, formato_resposta, velocidade) -> str` (`tts_handler.py:49-61`)
 
@@ -65,7 +66,7 @@ formato de taxa do `edge-tts`, resolve apelidos de voz via `voices.json`, gera o
 - **Arquivos temporários:** segmentos intermediários são removidos após
   concatenar (`tts_handler.py:85`); o arquivo final (prefixo aleatório via
   `tempfile.NamedTemporaryFile(delete=False, ...)`, `tts_handler.py:105-107`) é
-  devolvido ao chamador — a remoção cabe ao `BackgroundTasks` em `main.py:91`.
+  devolvido ao chamador — a remoção cabe ao `BackgroundTasks` em `main.py:113`.
 - **Observação:** texto **sem nenhuma parte falável** (só pausas) gera um
   arquivo só de silêncio; texto `None`/não-string não é tratado aqui (o filtro
   em `main.py` garante string quando ativo).
@@ -118,5 +119,6 @@ concatenação com silêncios) → caminho temporário → `FileResponse` → `o
   com ~2 s de silêncio no meio; `[pause: 500ms]` similar em milissegundos.
 - Teste de voz: `{"voice": "alloy"}` deve soar igual a
   `pt-BR-ThalitaMultilingualNeural` (mapeamento em `voices.json`).
-- Teste de erro: `speed: 3.0` passa na validação do modelo mas deve retornar
-  HTTP 500 (limite `2.0` de `velocidade_para_taxa`).
+- Teste de erro: `speed: 3.0` é rejeitado pelo modelo Pydantic e retorna
+  HTTP 422 (antes da Fase 2, passava na validação e retornava HTTP 500 no
+  limite `2.0` de `velocidade_para_taxa`).

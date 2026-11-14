@@ -37,12 +37,12 @@ interpretador 3.11 não vem instalado nesta máquina.
 - `tests/test_tts_handler.py`: conversão de velocidade e roteamento da síntese.
 - `tests/test_api.py`: rotas `GET /v1/models` e `POST /v1/audio/speech` via `TestClient`.
 
-## `xfail` estrito
+## `xfail` estrito (Fase 1; removidos na Fase 2)
 
-Os bugs conhecidos entram como `pytest.mark.xfail(strict=True)`: o teste
-descreve o comportamento CORRETO e hoje falha de propósito. Quando o bug for
-corrigido (Fase 2), o teste passa e o `xfail` estrito quebra (`xpassed`),
-forçando remover a marca. A suíte exige `0 xpassed`.
+Na Fase 1, os bugs conhecidos entravam como `pytest.mark.xfail(strict=True)`:
+o teste descrevia o comportamento CORRETO e falhava de propósito. Na Fase 2
+os bugs B1–B4 foram corrigidos e as 5 marcas foram removidas — os testes
+passam normalmente e a suíte exige `0 xfailed` e `0 xpassed`.
 
 ## Rede bloqueada nos testes
 

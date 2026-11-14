@@ -1,7 +1,5 @@
 """Caracterização de utils.obter_env_bool e TIPOS_MIME_AUDIO."""
 
-import os
-
 import pytest
 
 from utils import TIPOS_MIME_AUDIO, obter_env_bool

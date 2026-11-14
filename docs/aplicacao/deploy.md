@@ -87,11 +87,9 @@ os mesmos valores quando a variável não existe.
 | `DEFAULT_VOICE` | `.env.example:23` | `pt-BR-ThalitaMultilingualNeural` | `config.py:7` → idem |
 | `DEFAULT_RESPONSE_FORMAT` | `.env.example:26` | `mp3` | `config.py:8` → `mp3` |
 | `DEFAULT_SPEED` | `.env.example:29` | `1.0` | `config.py:9` → `1.0` |
-| `DEFAULT_LANGUAGE` | `.env.example:33` | `pt-BR` (`all` = todas) | `config.py:10` → `pt-BR` |
-| `REMOVE_FILTER` | `.env.example:40` | `False` | ver `texto-config-utils.md` |
-| `DETAILED_ERROR_LOGGING` | `.env.example:44` | `True` | ver `texto-config-utils.md` |
-| `EXPAND_API` | `.env.example:47` | `True` | ver `texto-config-utils.md` |
-| `PROXY` | `.env.example:51-52` | comentado (só descomentar se precisar de proxy) | não verificado |
+| `REMOVE_FILTER` | `.env.example:36` | `False` | ver `texto-config-utils.md` |
+| `DETAILED_ERROR_LOGGING` | `.env.example:40` | `True` | ver `texto-config-utils.md` |
+| `PROXY` | `.env.example:43` | comentado (só descomentar se precisar de proxy) | não verificado |
 
 **Observações:**
 

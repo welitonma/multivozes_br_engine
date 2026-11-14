@@ -27,16 +27,14 @@ na raiz do repositório estão inventariados à parte.
 ## Fluxo de uma requisição `POST /v1/audio/speech`
 
 1. Autenticação: com `REQUIRE_API_KEY=false`, `verificar_chave_api`
-   (`main.py:42-63`) retorna sem checar a chave — **mas** `HTTPBearer()`
-   (`main.py:18`, `auto_error=True`) rejeita antes qualquer requisição sem o
-   cabeçalho `Authorization` (403 nas versões fixadas do `requirements.txt`;
-   401 em FastAPI/Starlette mais novos). Na prática, envie sempre
-   `Authorization: Bearer <valor-qualquer>` com a checagem desligada e
-   `Authorization: Bearer <API_KEY>` com ela ligada (401 se inválida; 500 se
-   a exigência está ativa mas `API_KEY` não foi definida). Bug conhecido do
-   código, ainda não corrigido — ver item 14 das lacunas.
+   retorna sem checar a chave e a rota passa **sem** o cabeçalho
+   `Authorization` (corrigido na Fase 2). Com a exigência ligada, envie
+   `Authorization: Bearer <API_KEY>` (401 com `WWW-Authenticate: Bearer` se
+   ausente, com esquema diferente de Bearer ou se inválida; 500 se
+   a exigência está ativa mas `API_KEY` não foi definida — verificado antes
+   mesmo do cabeçalho).
 2. Validação: `input` vazio gera 400; `speed` é validado pelo Pydantic
-   (`0.25–4.0` — ver discrepância conhecida abaixo sobre `speed > 2.0`).
+   (`0.25–2.0`; fora da faixa retorna 422).
 3. Se `REMOVE_FILTER` for falso, aplica `preparar_texto_para_tts`.
 4. Resolve voz (`voice` ou `VOZ_PADRAO`), formato (`response_format`, MIME via
    `TIPOS_MIME_AUDIO`) e velocidade.
@@ -58,17 +56,15 @@ na raiz do repositório estão inventariados à parte.
 
 | Variável | Padrão | Onde é lida | Realmente usada? |
 |---|---|---|---|
-| `PORT` | `5050` | `main.py:34` (`PORTA`) | Sim — porta do Uvicorn (`main.py:122`); valor inválido quebra na inicialização (`int(...)` sem tratamento). |
-| `DEFAULT_VOICE` | `pt-BR-ThalitaMultilingualNeural` | `main.py:35` (`VOZ_PADRAO`) | Sim — usada quando `voice` é omitido (`main.py:81`). |
-| `DEFAULT_RESPONSE_FORMAT` | `mp3` | `main.py:36` (`FORMATO_RESPOSTA_PADRAO`) | **Não** — o formato efetivo vem sempre de `request_data.response_format` (padrão `mp3` do modelo). |
-| `DEFAULT_SPEED` | `1.0` | `main.py:37` (`VELOCIDADE_PADRAO`) | **Não** — a velocidade efetiva vem sempre de `request_data.speed` (padrão `1.0`). |
-| `REMOVE_FILTER` | `False` | `main.py:38` via `obter_env_bool` | Sim — `True` desativa `preparar_texto_para_tts`. |
+| `PORT` | `5050` | `main.py` (`PORTA`) | Sim — porta do Uvicorn; valor não inteiro ou fora de 1–65535 aborta a inicialização com `RuntimeError("Configuração inválida: PORT='...'")`. |
+| `DEFAULT_VOICE` | `pt-BR-ThalitaMultilingualNeural` | `main.py` (`VOZ_PADRAO`) | Sim — usada quando `voice` é omitido. |
+| `DEFAULT_RESPONSE_FORMAT` | `mp3` | `main.py` (`FORMATO_RESPOSTA_PADRAO`) | Sim — usada quando `response_format` é omitido (corrigido na Fase 2); valor fora de `TIPOS_MIME_AUDIO` aborta a inicialização. |
+| `DEFAULT_SPEED` | `1.0` | `main.py` (`VELOCIDADE_PADRAO`) | Sim — usada quando `speed` é omitido (corrigido na Fase 2); valor não numérico ou fora de 0.25–2.0 aborta a inicialização. |
+| `REMOVE_FILTER` | `False` | `main.py` via `obter_env_bool` | Sim — `True` desativa `preparar_texto_para_tts`. |
 | `API_KEY` | `None` | `utils.py:14` (`CHAVE_API`) | Sim — comparada com o Bearer Token quando `REQUIRE_API_KEY=true`. |
-| `REQUIRE_API_KEY` | `True` | `utils.py:15` (`EXIGIR_CHAVE_API`) | Em tese sim — `False` faz `verificar_chave_api` retornar sem checar; mas bug conhecido em `HTTPBearer()` (`main.py:18`) ainda exige o cabeçalho `Authorization` (ver item 14 das lacunas). |
+| `REQUIRE_API_KEY` | `True` | `utils.py:15` (`EXIGIR_CHAVE_API`) | Sim — `False` faz `verificar_chave_api` retornar sem checar e a rota passa sem `Authorization` (corrigido na Fase 2). |
 | `DETAILED_ERROR_LOGGING` | `True` | `utils.py:16` (`LOG_ERROS_DETALHADO`) | Sim — controla impressão de tracebacks no console. |
 | `PROXY` | `None` | `tts_handler.py:16` | Sim — repassado a `edge_tts.Communicate`; `None` = sem proxy. |
-| `DEFAULT_LANGUAGE` | `pt-BR` | só declarada em `config.py:10` | **Não** — nenhuma referência no código (confirmado por busca; só existe em `config.py` e no `.env.example:33`). |
-| `EXPAND_API` | `True` | só existe no `.env.example:47` | **Não** — nenhum `.py` lê essa variável (confirmado por busca). |
 
 Conversão de booleanos (`obter_env_bool`, `utils.py:8-11`): `True` se o valor
 (lowercase) estiver em `("yes", "y", "true", "1", "t")`; qualquer outra coisa
@@ -81,17 +77,15 @@ divergência **verificada por leitura do código/disco** nesta consolidação.
 Nada aqui foi executado (servidor, rede e instalação eram proibidos no
 despacho).
 
-1. **`speed` entre 2.0 e 4.0 gera HTTP 500** (verificado no código): o modelo
-   Pydantic aceita até `4.0` (`main.py:27`), mas `velocidade_para_taxa` rejeita
-   valores fora de `0.25–2.0` (`tts_handler.py:44-45`), e o `ValueError` cai no
-   `except` genérico de `text_to_speech`.
-2. **`DEFAULT_RESPONSE_FORMAT` e `DEFAULT_SPEED` lidas mas sem uso efetivo**
-   (verificado no código: `main.py:36-37` lê, `main.py:81-85` ignora e usa os
-   campos da requisição).
-3. **`DEFAULT_LANGUAGE` sem uso no código** (verificado por busca: só aparece
-   em `config.py:10` e no `.env.example:33`).
-4. **`EXPAND_API` só existe no `.env.example:47`** (verificado por busca:
-   nenhum `.py` lê essa variável).
+1. ~~**`speed` entre 2.0 e 4.0 gera HTTP 500**~~ — **corrigido na Fase 2**:
+   o modelo Pydantic aceita `0.25–2.0` e valores fora da faixa retornam 422.
+2. ~~**`DEFAULT_RESPONSE_FORMAT` e `DEFAULT_SPEED` lidas mas sem uso efetivo**~~
+   — **corrigido na Fase 2**: passaram a valer como padrão quando o campo é
+   omitido na requisição.
+3. ~~**variável de idioma padrão sem uso no código**~~ — **corrigido na Fase 2**:
+   removida de `config.py` e do `.env.example` (nenhum `.py` a lia).
+4. ~~**flag de compatibilidade só existente no `.env.example`**~~ — **corrigido na Fase 2**:
+   removida do `.env.example` (nenhum `.py` a lia).
 5. **`voices.example.json` citado no `CHANGELOG.md:19` mas ausente do disco**
    (verificado com `ls`: só existe `voices.json`; se o exemplo nunca foi
    commitado ou foi removido, não se sabe).
@@ -127,18 +121,15 @@ despacho).
     regex de pausas `74` → `71`, `Communicate/save` `143-144` → `138-139`,
     traceback de segmento `91-92` → `87-88`, `unlink` de segmento `87` → `85`,
     `AudioSegment.silent` `101` → `102`.
-14. **`REQUIRE_API_KEY=false` ainda exige o cabeçalho `Authorization`** (bug
-    conhecido do código, **verificado por teste do orquestrador em ambiente
-    descartável, versões fixadas**): `security = HTTPBearer()` (`main.py:18`)
-    usa `auto_error=True` por padrão, então o FastAPI rejeita a requisição sem
-    cabeçalho antes de `verificar_chave_api` (`main.py:42-63`) chegar a checar
-    `EXIGIR_CHAVE_API`. Medido: com `REQUIRE_API_KEY=false`,
-    `POST /v1/audio/speech` sem cabeçalho → HTTP 403; com qualquer
-    `Authorization: Bearer x` → HTTP 200. Em FastAPI/Starlette mais novos
-    (Starlette 1.x) a ausência do cabeçalho devolve 401 em vez de 403
-    (também medido). Documentado como bug conhecido, não como comportamento
-    desejado — ver `main.md` (seções da rota, de `verificar_chave_api` e "Como
-    executar e testar").
+14. ~~**`REQUIRE_API_KEY=false` ainda exige o cabeçalho `Authorization`**~~ —
+    **corrigido na Fase 2**: `security = HTTPBearer(auto_error=False)`, então
+    sem cabeçalho (ou com esquema diferente de Bearer) a requisição chega a
+    `verificar_chave_api`, que retorna sem checar quando a exigência está
+    desligada. Medido: com `REQUIRE_API_KEY=false`,
+    `POST /v1/audio/speech` sem cabeçalho → HTTP 200. Com a exigência ligada,
+    sem cabeçalho/esquema errado/chave errada → HTTP 401 com
+    `WWW-Authenticate: Bearer` — ver `main.md` (seções da rota, de
+    `verificar_chave_api` e "Como executar e testar").
 
 ## O que esta consolidação fez e não fez
 
