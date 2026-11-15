@@ -160,3 +160,28 @@ environment `DockerHUB`):**
 - Conversão exata de `"True"`/`"False"` do `.env` para booleano (vive em
   `config.py`, coberto em `texto-config-utils.md`).
 - Execução do workflow no GitHub Actions; segredos `DOCKERHUB_*` não lidos.
+
+## FEATURE-006 — Piper em produção (imagem única)
+
+A mesma imagem de sempre agora contém o Piper + voz `pt_BR-faber-medium`
+(baixada na construção para `/app/models`); `TTS_BACKEND` continua `edge`
+por padrão. Camadas novas no `Dockerfile`: `libgomp1` (exigida pelo
+onnxruntime), instalação de `requirements-local.txt` e o download da voz
+numa camada própria de cache, antes do `COPY . .`.
+
+- Verificação arm64: `piper-tts==1.8.0` e `onnxruntime` têm wheel
+  `manylinux aarch64` (conferido via `pip download --platform
+  manylinux_2_28_aarch64`), então o Piper é instalado nas duas
+  arquiteturas — sem condicional `TARGETARCH`.
+- Tamanho da imagem: `multivozes-test-006` = 1.38GB contra 188MB da base
+  `python:3.11-slim` (camadas novas: apt ffmpeg+libgomp1 457MB, pip
+  318MB, voz `faber` 63.3MB — `docker history`).
+- Subir com Piper: `docker run -p 5050:5050 -e TTS_BACKEND=piper
+  -e PIPER_THREADS=2 multivozes-br-engine`. Para voltar ao Edge, rode sem
+  `TTS_BACKEND`.
+- systemd com venv (host, sem Docker): `pip install -r requirements-local.txt`,
+  `python scripts/baixar_voz_piper.py pt_BR-faber-medium` e
+  `TTS_BACKEND=piper` no ambiente do serviço.
+- CI: job `testes` (Python 3.11, `ruff check .`, `pytest -q`) em PR e push;
+  `build-and-push` depende dele (`needs: testes`) e não publica em PR;
+  label de licenças `MIT AND GPL-3.0-or-later`.

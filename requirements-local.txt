@@ -1,3 +1,3 @@
 # Dependências opcionais do backend local Piper (FEATURE-004).
-# Não entram em requirements.txt nem na imagem Docker: só para uso local.
+# Instalado na imagem Docker oficial (Dockerfile) e opcional na instalação manual/systemd.
 piper-tts==1.8.0

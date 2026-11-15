@@ -9,11 +9,22 @@ num cache em memória, um por voz.
 import asyncio
 import json
 import os
+import re
 import tempfile
 import wave
 from pathlib import Path
 
 _CACHE_VOZES = {}
+
+VOZ_PADRAO_PIPER = "pt_BR-faber-medium"
+# Nome de voz do Edge (ex.: pt-BR-ThalitaMultilingualNeural, o DEFAULT_VOICE
+# atual): quando chega ao backend Piper, cai na voz padrão.
+_PADRAO_VOZ_EDGE = re.compile(r"^[a-z]{2}-[A-Z]{2}-.+Neural$")
+
+
+def voz_padrao() -> str:
+    """Voz padrão do Piper: `PIPER_DEFAULT_VOICE` ou `pt_BR-faber-medium`."""
+    return os.getenv("PIPER_DEFAULT_VOICE", "").strip() or VOZ_PADRAO_PIPER
 
 
 def diretorio_modelos() -> Path:
@@ -91,7 +102,14 @@ class BackendPiper:
         self._mapa = carregar_mapeamento_piper()
 
     def resolver_voz(self, nome: str) -> str:
-        """Apelido OpenAI -> modelo Piper; nome desconhecido passa direto."""
+        """Apelido OpenAI -> modelo Piper.
+
+        Nome vazio ou nome de voz do Edge (ex.: o `DEFAULT_VOICE` atual)
+        cai na voz padrão (`PIPER_DEFAULT_VOICE` ou `pt_BR-faber-medium`);
+        qualquer outro nome passa direto como id de modelo.
+        """
+        if not (nome or "").strip() or _PADRAO_VOZ_EDGE.match(nome.strip()):
+            return voz_padrao()
         return self._mapa.get(nome, nome)
 
     def caminho_modelo(self, modelo: str) -> Path:

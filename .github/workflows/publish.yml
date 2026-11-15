@@ -12,9 +12,35 @@ on:
     - cron: '0 6 * * 1'  # Toda segunda: reconstrói a imagem com o edge-tts mais recente
 
 jobs:
+  testes:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout do código
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Python 3.11
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # 3. ffmpeg (exigido por tests/test_tts_local.py: mp3/opus via AudioSegment.from_file)
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+
+      # 4. Dependências de desenvolvimento, lint e testes
+      - name: Install dependencies and run checks
+        run: |
+          pip install -r requirements-dev.txt
+          ruff check .
+          pytest -q
+
   build-and-push:
     runs-on: ubuntu-latest
     environment: DockerHUB
+    needs: testes
 
     steps:
       # 1. Checkout do código
@@ -39,7 +65,7 @@ jobs:
             org.opencontainers.image.title=Multivozes BR Engine
             org.opencontainers.image.description=TTS API compatível com OpenAI usando Microsoft Edge
             org.opencontainers.image.vendor=welitonma
-            org.opencontainers.image.licenses=MIT
+            org.opencontainers.image.licenses=MIT AND GPL-3.0-or-later
 
       # 3. Configura QEMU para build multi-plataforma
       - name: Set up QEMU

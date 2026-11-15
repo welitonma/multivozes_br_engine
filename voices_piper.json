@@ -1,8 +1,8 @@
 {
   "alloy": "pt_BR-faber-medium",
-  "echo": "pt_BR-edresson-low",
-  "fable": "pt_BR-cadu-medium",
+  "echo": "pt_BR-faber-medium",
+  "fable": "pt_BR-faber-medium",
   "onyx": "pt_BR-faber-medium",
-  "nova": "pt_BR-cadu-medium",
-  "shimmer": "pt_BR-edresson-low"
+  "nova": "pt_BR-faber-medium",
+  "shimmer": "pt_BR-faber-medium"
 }
