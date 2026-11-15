@@ -90,6 +90,23 @@ Para tirar o máximo proveito do projeto, consulte os nossos guias detalhados:
 
 ---
 
+## 🔊 Piper local em produção (sem internet)
+
+A imagem Docker já vem com o backend local Piper e a voz `pt_BR-faber-medium`.
+Sem nenhuma variável, a API usa o Edge como sempre; para sintetizar offline:
+
+```
+docker run -p 5050:5050 -e TTS_BACKEND=piper -e PIPER_THREADS=2 multivozes-br-engine
+```
+
+Sem `voice` na requisição (ou com voz do Edge), o Piper usa a `faber`
+(`PIPER_DEFAULT_VOICE`). Para voltar ao Edge, basta rodar sem `TTS_BACKEND`.
+Detalhes em [`docs/aplicacao/tts-local.md`](docs/aplicacao/tts-local.md) e
+[`docs/aplicacao/deploy.md`](docs/aplicacao/deploy.md); componentes de
+terceiros em [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+
+---
+
 ## 📋 Pré-requisitos
 
 * **Python 3.8 ou superior**
@@ -246,6 +263,12 @@ Acesse a documentação interativa (Swagger UI) para testar a API em:
 - **Local:** http://localhost:5050/docs
 - **Remoto:** http://SEU_IP:5050/docs
 ```
+
+---
+
+## 🛠️ Desenvolvimento
+
+Para montar o ambiente de desenvolvimento (Python 3.11, venv, ruff e pytest), consulte o [guia de desenvolvimento](docs/desenvolvimento.md).
 
 
 

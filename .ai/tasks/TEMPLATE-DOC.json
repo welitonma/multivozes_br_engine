@@ -1,0 +1,25 @@
+{
+  "id": "DOC-XXX",
+  "type": "doc",
+  "title": "Documentar/pesquisar topico X",
+  "status": "PLANNED",
+  "output_dir": "docs/XXX/",
+  "max_units_per_agent": 3,
+  "max_calls_per_unit": 6,
+  "max_resumes_without_progress": 2,
+  "resumes_without_progress": 0,
+  "last_progress_count": null,
+  "human_approval_required": true,
+  "units": [
+    {
+      "id": "exemplo-fonte-1",
+      "source": "https://exemplo.com/docs/pagina-1",
+      "status": "pending",
+      "output": null,
+      "attempts": 0,
+      "last_error": null
+    }
+  ],
+  "created_at": "",
+  "updated_at": ""
+}

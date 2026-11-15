@@ -1,0 +1,58 @@
+{
+  "id": "DOC-001",
+  "type": "doc",
+  "title": "Documentar toda a aplicacao multivozes_br_engine",
+  "status": "DONE",
+  "output_dir": "docs/aplicacao/",
+  "max_units_per_agent": 3,
+  "max_calls_per_unit": 6,
+  "max_resumes_without_progress": 2,
+  "resumes_without_progress": 0,
+  "last_progress_count": 5,
+  "human_approval_required": true,
+  "units": [
+    {
+      "id": "main",
+      "source": "main.py",
+      "status": "done",
+      "output": "docs/aplicacao/main.md",
+      "attempts": 1,
+      "last_error": null
+    },
+    {
+      "id": "tts-handler",
+      "source": "tts_handler.py",
+      "status": "done",
+      "output": "docs/aplicacao/tts-handler.md",
+      "attempts": 1,
+      "last_error": null
+    },
+    {
+      "id": "texto-config-utils",
+      "source": "handle_text.py, config.py, utils.py, voices.json",
+      "status": "done",
+      "output": "docs/aplicacao/texto-config-utils.md",
+      "attempts": 1,
+      "last_error": null
+    },
+    {
+      "id": "deploy",
+      "source": "Dockerfile, multivozes_br_engine.service, .env.example, requirements.txt, .github/workflows/publish.yml",
+      "status": "done",
+      "output": "docs/aplicacao/deploy.md",
+      "attempts": 1,
+      "last_error": null
+    },
+    {
+      "id": "docs-existentes",
+      "source": "README.md, API_USAGE_GUIDE.md, BEGINNERS_GUIDE.md, N8N-INTEGRATION.md, VOICES.md, SUPPORT.md, CHANGELOG.md",
+      "status": "done",
+      "output": "docs/aplicacao/docs-existentes.md",
+      "attempts": 1,
+      "last_error": null
+    }
+  ],
+  "created_at": "2026-11-06T00:00:00Z",
+  "updated_at": "2026-11-06T11:48:10.599Z",
+  "fix_cycles_used": 0
+}

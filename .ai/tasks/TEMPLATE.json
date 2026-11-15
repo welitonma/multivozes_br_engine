@@ -1,0 +1,16 @@
+{
+  "id": "FEATURE-XXX",
+  "title": "Titulo descritivo da tarefa",
+  "status": "SPEC_DRAFT",
+  "spec": ".specs/features/XXX/spec.md",
+  "base_branch": "main",
+  "worktree": ".",
+  "branch": "feat/feature-XXX",
+  "allowed_paths": ["src/**", "tests/**", "docs/**"],
+  "required_checks": ["pnpm run lint", "pnpm run typecheck", "pnpm test"],
+  "max_fix_cycles": 2,
+  "fix_cycles_used": 0,
+  "human_approval_required": true,
+  "created_at": "",
+  "updated_at": ""
+}

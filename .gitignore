@@ -1,0 +1,19 @@
+# Ambiente local
+.env
+.env.*
+!.env.example
+.venv/
+
+# Bytecode / caches Python
+__pycache__/
+*.pyc
+
+# Caches de ferramentas de dev
+.pytest_cache/
+.ruff_cache/
+
+# Build de pacotes
+*.egg-info/
+
+# Modelos Piper (.onnx + .onnx.json, nunca versionar)
+models/
