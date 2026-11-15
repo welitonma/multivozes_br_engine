@@ -14,3 +14,6 @@ __pycache__/
 
 # Build de pacotes
 *.egg-info/
+
+# Modelos Piper (.onnx + .onnx.json, nunca versionar)
+models/
